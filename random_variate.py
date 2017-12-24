@@ -17,7 +17,7 @@ pm =  p_u/A*(1+np.sqrt(u**2+A**2))
 p = np.linspace(0,12,1001)
 
 def f(p):
-    return (1+A*gamma_u*np.sqrt(1+p**2))*np.exp(-A*(p-p_u)**2/(np.sqrt(1+p**2)*gamma_u+p*p_u+1))
+    return (1+A*gamma_u*np.sqrt(1+p**2))*np.exp(-A*(p-p_u)**2/abs(np.sqrt(1+p**2)*gamma_u+p*p_u+1))
 
 def f_prime(p):
     return A*gamma_u*np.exp(-A*(gamma_u*(-u)*p+gamma_u*np.sqrt(p**2+1)-1))*(A*gamma_u*u*np.sqrt(p**2+1)-A*gamma_u*p+u)
@@ -41,7 +41,12 @@ pplus_start = 1.
 pplus = 4.0*scp.root(F,pplus_start)['x'][0]
 pminus = 4.0*scp.root(F,-1.)['x'][0]
 
-while(pplus == pminus):
+if(pplus < pminus):
+	temp = pminus
+	pminus = pplus
+	pplus = temp
+
+while(abs(pplus - pminus) < 1e-7):
     pplus_start += 0.2
     pplus = 4.0*scp.root(F,pplus_start)['x'][0]
 
@@ -64,7 +69,7 @@ E = 0.0
 Eperp = 0.0
 P = np.linspace(0,10.,50)
 F = f(P)/np.linalg.norm(f(P))
-N = 10000
+N = 100000
 Flag = 0
 x = np.zeros(N)
 xs = np.zeros(N)
@@ -116,16 +121,19 @@ while(i<N):
         return (1-fpr)*np.exp(-A*((pp-p_u)**2+gamma_p**2*gamma_u**2*ps**2)/(gamma_p*gamma_u*gamma_s+pp*p_u+1))
 
     def Ff(ps):
-        return f2(ps)/f2(p2m) - (1/np.e)
+        return abs(f2(ps))/f2(p2m) - (1/np.e)
 
+    pplus_perp_start = 1.0
     X = 0.0
 
     pplus_perp = scp.root(Ff,pplus_perp_start)['x'][0]
     pminus_perp = scp.root(Ff,0.0)['x'][0]
 
-    while(pplus_perp == pminus_perp): 
+    while(abs(pplus_perp - pminus_perp) < 1e-7 or abs(abs(pplus_perp) - abs(pminus_perp)) < 1e-7): 
         pplus_perp_start += 0.3
         pplus_perp = scp.root(Ff,pplus_perp_start)['x'][0]
+
+    pminus_perp = -pplus_perp
 
     lambdap_perp = -f2(pplus_perp)/f2_prime(pplus_perp)
     lambdam_perp = f2(pminus_perp)/f2_prime(pminus_perp)
@@ -141,17 +149,17 @@ while(i<N):
         if(U <= qm_perp):
             Y = U/qm_perp
             X = (1-Y)*(pminus_perp+lambdam_perp)+Y*(pplus_perp-lambdap_perp)
-            if(V <= f2(X)/f2(p2m)):
+            if(V <= abs(f2(X)/f2(p2m))):
                 flag = 1
             elif(U <= qm_perp+qp_perp):
                 E = -np.log(abs(U-qm_perp/qp_perp))
                 X = pplus_perp - lambdap_perp*(1-E)
-            if(V<=np.exp(E)*f2(X)/f2(p2m)):
+            if(V <= abs(np.exp(E)*f2(X)/f2(p2m))):
                 flag = 1
         else:
             E = -np.log(abs(U-(qm_perp+qp_perp)/qmi_perp))
-            X = pminus + lambdam_perp*(1-E)
-            if(V <= np.exp(E)*f2(X)/f2(p2m)):
+            X = pminus_perp + lambdam_perp*(1-E)
+            if(V <= abs(np.exp(E)*f2(X)/f2(p2m))):
                 flag = 1
 #	print("Iteration ",i)
 #	print(X)
