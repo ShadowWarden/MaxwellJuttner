@@ -17,7 +17,7 @@ pm =  p_u/A*(1+np.sqrt(u**2+A**2))
 p = np.linspace(0,12,1001)
 
 def f(p):
-    return (1+A*gamma_u*np.sqrt(1+p**2))*np.exp(-A*(p-p_u)**2/abs(np.sqrt(1+p**2)*gamma_u+p*p_u+1))
+    return (1+A*gamma_u*np.sqrt(1+p**2))*np.exp(-A*(p-p_u)**2/(np.sqrt(1+p**2)*gamma_u+p*p_u+1))
 
 def f_prime(p):
     gamma_p = np.sqrt(1+p**2)
@@ -31,8 +31,13 @@ def Gamma(p):
     return np.sqrt(1+p**2)
 #pminus = -p[np.where(f(p) == max(f(p)))[0][0]]
 
+def foverfp(p):
+    gamma_p = Gamma(p)
+    f = p/(1+A*gamma_u*gamma_p)/(2*gamma_p)-(2*(gamma_p*gamma_u+p*p_u+1)*A*(p-p_u)-A*(p-p_u)**2*(gamma_u*p/gamma_p+p_u))/(gamma_p*gamma_u+p*p_u+1)**2
+    return 1./f
+
 def F(p):
-    return f(p)/f(pm)-(1/np.e)
+    return f(p)/f(pm)-(1/np.e)**2
 
 pcand = pm
 i = 1.0
@@ -52,8 +57,12 @@ while(F(pcand) > 0):
 
 pminus = scp.bisect(F,pm,pcand)
 
-lambdap = -f(pplus)/f_prime(pplus)
-lambdam = f(pminus)/f_prime(pminus)
+#P = np.linspace(pminus,pplus,101)
+#F = f(P)
+#F /= sum(F)*(pplus-pminus)/101.
+
+lambdap = -foverfp(pplus)
+lambdam = foverfp(pminus)
 
 qmi = lambdam/(pplus-pminus)
 qp = lambdap/(pplus-pminus)
@@ -65,7 +74,7 @@ print(lambdap,lambdam)
 
 X = 0.0
 E = 0.0
-N = 1000
+N = 10000
 Flag = 0
 x = np.zeros(N)
 xs = np.zeros(N)
@@ -84,7 +93,7 @@ while(i<N):
         if(U <= qm):
             Y = U/qm
             X = (1-Y)*(pminus+lambdam)+Y*(pplus-lambdap)
-            if(V <= f(X)/f(pm)):
+            if(V <= (f(X)/f(pm))):
                 flag = 1
         elif(U <= qm+qp):
             E = -np.log(abs((U-qm)/qp))
@@ -117,7 +126,7 @@ while(i<N):
         return (1-fpr)*np.exp(-A*((pp-p_u)**2+gamma_p**2*gamma_u**2*ps**2)/(gamma_p*gamma_u*gamma_s+pp*p_u+1))
 
     def Ff(ps):
-        return f2(ps)/f2(p2m) - (1/np.e)
+        return f2(ps)/f2(p2m) - (1/np.e)**2
 
     pcand = p2m
     j = 1.0
