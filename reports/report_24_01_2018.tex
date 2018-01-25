@@ -1,0 +1,91 @@
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=1.5in,bmargin=1.5in,lmargin=1.5in,rmargin=1.5in}
+\usepackage{babel}
+\usepackage{graphicx}
+\graphicspath{{../plots/}}
+
+\title{Random Sampling module for a drifting Maxwell-Juttner Distribution}
+\author{Omkar H. Ramachandran}
+\date{24 January 2018}
+
+
+\begin{document}
+
+\maketitle
+\section{Corrections made to the code}
+The main sampling loop operates by first calculating the extent of the bounding 
+curves of the given distribution. Specifically, we calculate
+$$ \lambda_{+} = -\frac{f(p_{+})}{f'(p_{+})} $$
+and
+$$ \lambda_{-} = \frac{f(p_{-})}{f'(p_{-})} $$
+where $f(p)$ is the distribution to be sampled from. For some reason,
+when the $\lambda$s are written out in this form, the solution becomes
+inaccurate for low values of the drift velocity $u$ and the inverse temperature $A$
+The main change made with this version of the code was to rewrite the $\lambda$ 
+expression to use $(\log{f})'$ instead of directly computing $f/f'$. Specifically,
+the equations were changed to look as follows:
+$$ \lambda_{+} = -\frac{1}{(\log{f(p_{+})})'} $$
+$$ \lambda_{-} = \frac{1}{(\log{f(p_{-})})'} $$
+It is important to note however, that this change has only been made to the
+parallel distribution. A similar change has to be made for the perpendicular
+distribution in the near future.
+
+\section{Reforming the equations in $\log{p}$ coordiates}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.45\textwidth]{direct_discrepency_log.png}
+	\includegraphics[width=0.45\textwidth]{transform_no_discrepency_log.png}
+	\caption{Comparison of generated histogram and analytically predicted function in $\log{|p|}$ coordinates. (left) Plot where the histogram is made directly from $\log{|p|}$ (right) Plot with the histogram generated in $|p|$ coordinates and then transformed to $\log{|p|}$}
+	\label{fig:direct_v_transform_log}
+\end{figure}
+For some reason, generating the histogram with respect to $\log$s of the
+absolute momenta, doesn't work (see Figure \ref{fig:direct_v_transform_log}).
+However, I can generate the histogram first and then transform the histogram 
+to $\log{|p|}$ coordinates. The analytic curve in $|p|$ is as follows:
+$$
+f\left(p\right)=p\frac{\sinh\left(Ap_{u}p\right)}{\left(Ap_{u}\right)}\exp\left\{ -A\left(\gamma_{u}\gamma_{p}-1\right)\right\} 
+$$
+Defining $\hat{p}=\log{|p|}$, we have
+$$
+f(\hat{p})=\exp{(\hat{p})}\frac{\sinh(Ap_{u}\exp{(\hat{p})})}{(Ap_{u})}\exp\left[-A\left(\gamma_{u}\sqrt{1+\exp{(2\hat{p})}}-1\right)\right] 
+$$
+
+\section{Results}
+\subsection{Comparison of the histogram and the analytic curve}
+\subsubsection{$A=1.0$, $u\geq0.9$}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.45\textwidth]{exactly_correct_A_1_u_0p9.png}
+	\includegraphics[width=0.45\textwidth]{exactly_correct_A_1_u_0p99.png}
+	\caption{Comparison of generated histogram and analytically predicted function for a highly relativistic drift}
+	\label{fig:high_u}
+\end{figure}
+Looking at Figure \ref{fig:high_u}, it is fairly clear that the generated 
+histogram retains the accuracy of the previous iteration of the code
+\subsubsection{$A=1.0$, $u\leq0.1$}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.45\textwidth]{exactly_correct_A_1_u_0p1.png}
+	\includegraphics[width=0.45\textwidth]{exactly_correct_A_1_u_1em3.png}
+	\caption{Comparison of generated histogram and analytically predicted function in the non-relativistic regime}
+	\label{fig:low_u}
+\end{figure}
+Looking at Figure \ref{fig:low_u}, it is clear that the sampling module is very 
+accurate even at low drifts. Specifically, the distribution gets closer to a
+regular maxwellian with decreasing $u$.
+In addition, the generation experiences no efficiency loss -- even when the
+parameters get to an extreme.
+
+\subsection{Shape of the histogram with varying parameters}
+Figure \ref{fig:comparison_diff_A_u} shows the effect of varying parameters on the generated data. Each curve was tested against the analytically predicted function and held up to the same accuracy specifications as the previous plots.
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{log_log_A_diff_u_diff.png}
+	\caption{Shape of predicted histogram with varying $A$ and $u$. Each individual curve matched perfectly with the analytically predicted function}
+	\label{fig:comparison_diff_A_u}
+\end{figure}
+
+\end{document}
