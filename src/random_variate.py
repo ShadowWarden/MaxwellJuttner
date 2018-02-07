@@ -9,9 +9,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize as scp
 import random_variate_headers as randvar
+import analyse
 
 A = 1.0
-u = 0.1
+u = 0.7
 gamma_u = 1./np.sqrt(1-u**2)
 p_u = u*gamma_u
 pm =  p_u/A*(1+np.sqrt(u**2+A**2))
@@ -98,4 +99,14 @@ while(i<N):
 #        continue
     i += 1
 
-xperp = xs*np.sqrt(1+x**2)     
+xperp = xs*np.sqrt(1+x**2)
+
+# Plot generated contour
+fig = plt.figure(1)
+analyse.plot_contour(x,xperp,200,A,u)
+
+# Plot generated histogram
+fig2 = plt.figure(2)
+N = analyse.plot_histogram(x,xperp,100)
+analyse.plot_analytical_mag(N[1][0],N[1][-1],A,u,100,N)
+plt.show()
