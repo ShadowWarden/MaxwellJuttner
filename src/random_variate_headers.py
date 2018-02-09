@@ -62,12 +62,12 @@ def generate_variate(f,params):
             if(V <= (f(X)/f(pm))):
                 flag = 1
         elif(U <= qm+qp):
-            E = -np.log(abs((U-qm)/qp))
+            E = -np.log(((U-qm)/qp))
             X = pplus - lambdap*(1-E)
             if(V<=np.exp(E)*f(X)/f(pm)):
                 flag = 1
         else:
-            E = -np.log(abs((U-(qm+qp))/qmi))
+            E = -np.log(((U-(qm+qp))/qmi))
             X = pminus + lambdam*(1-E)
             if(V <= np.exp(E)*f(X)/f(pm)):
                 flag = 1

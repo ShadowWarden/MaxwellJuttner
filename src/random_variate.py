@@ -11,8 +11,8 @@ import scipy.optimize as scp
 import random_variate_headers as randvar
 import analyse
 
-A = 1.0
-u = 0.7
+A = 100.0
+u = 1-1e-2
 gamma_u = 1./np.sqrt(1-u**2)
 p_u = u*gamma_u
 pm =  p_u/A*(1+np.sqrt(u**2+A**2))
@@ -33,17 +33,29 @@ def foverfp(p):
     gamma_p = Gamma(p)
     f = p/(1+A*gamma_u*gamma_p)/(2*gamma_p)-(2*(gamma_p*gamma_u+p*p_u+1)*A*(p-p_u)-A*(p-p_u)**2*(gamma_u*p/gamma_p+p_u))/(gamma_p*gamma_u+p*p_u+1)**2
     return 1./f
+    
 
 def F(p):
     return f(p)/f(pm)-(1/np.e)**2
 
 params = randvar.compute_params(F,foverfp,pm)
 
+def foverfp2(p_p,p_s):
+    gamma_p = Gamma(p_p)
+    gamma_s = Gamma(p_s)
+    N = 2*(gamma_u*gamma_p*gamma_s+p_p*p_u+1)*A*gamma_p**2*gamma_u**2*p_s-\
+        A*((p_p-p_u)**2+gamma_p**2*gamma_u**2*p_s**2)*gamma_u*gamma_p*p_s/gamma_s
+    D = gamma_u*gamma_p*gamma_s+p_p*p_u+1
+    f = 1./p_s - N/D**2
+    return 1./f
+
+
 print(params)
 
 X = 0.0
 E = 0.0
 N = 10000
+Npts = N
 Flag = 0
 x = np.zeros(N)
 xs = np.zeros(N)
@@ -53,7 +65,6 @@ Reject = 0
 
 i = 0
 while(i<N):
-    flag = 0
     print("Iteration:",i,"Rejects:",Reject)
 
     x[i] = randvar.generate_variate(f,params)
@@ -81,13 +92,11 @@ while(i<N):
 
     params_perp = randvar.compute_params(Ff,foverfp,p2m)
 
-    params_perp[2] = -f2(params_perp[0])/f2_prime(params_perp[0])
-    params_perp[3] = f2(params_perp[1])/f2_prime(params_perp[1])
+    params_perp[2] = -foverfp2(pp,params_perp[0])
+    params_perp[3] = foverfp2(pp,params_perp[1])
     params_perp[4] = params_perp[3]/(params_perp[0]-params_perp[1])
     params_perp[5] = params_perp[2]/(params_perp[0]-params_perp[1]) 
     params_perp[6] = 1 - (params_perp[5]+params_perp[4])
-
-
 
     xs[i] = randvar.generate_variate(f2,params_perp)
     uperp = xs[i]*np.sqrt(1+x[i]**2)
@@ -102,11 +111,22 @@ while(i<N):
 xperp = xs*np.sqrt(1+x**2)
 
 # Plot generated contour
-fig = plt.figure(1)
-analyse.plot_contour(x,xperp,200,A,u)
+#fig = plt.figure(1)
+#analyse.plot_contour(x,xperp,int(Npts/50),A,u)
 
 # Plot generated histogram
-fig2 = plt.figure(2)
-N = analyse.plot_histogram(x,xperp,100)
-analyse.plot_analytical_mag(N[1][0],N[1][-1],A,u,100,N)
+#fig2 = plt.figure(2)
+#N = analyse.plot_histogram(x,xperp,100)
+#analyse.plot_analytical_mag(N[1][0],N[1][-1],A,u,100,N)
+Nx = np.linspace(min(x),max(x),100)
+Ny = np.linspace(min(xperp),max(xperp),100)
+Xx,Yy = np.meshgrid(Nx,Ny)
+FF = Yy*np.exp(-A*(gamma_u*np.sqrt(1+Xx**2+Yy**2)-gamma_u*u*Xx-1))
+
+plt.contour(Xx,Yy,FF,cmap="seismic")
+plt.hexbin(x,xperp,cmap="Reds")
+plt.title(r"$f(p_{\parallel},p_{\perp})$ for $A=%.2f$ and $u=%.2f$" % (A,u))
+plt.xlabel(r"$p_{\parallel}$")
+plt.ylabel(r"$p_{\perp}$")
+plt.colorbar()
 plt.show()
