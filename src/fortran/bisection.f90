@@ -203,7 +203,7 @@ contains
 			else if (U <= qm+qp) then
 				E = -log((U-qm)/qp)
 				X = pplus - lambdap*(1-E)
-				if(V <= exp(E)*func(X,pp,A,u)/func(om,pp,A,u)) then
+				if(V <= exp(E)*func(X,pp,A,u)/func(pm,pp,A,u)) then
 					flag = 1
 				end if
 			else
