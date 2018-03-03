@@ -18,7 +18,9 @@ module random_variate
 		end function templatem
 	end interface
 
+	real, parameter :: pi=3.14159265
 contains
+
 	function fparallel(p,pp,A,u)
 		real, intent (in) :: p,pp,A,u
 		real :: fparallel
@@ -66,7 +68,7 @@ contains
 
 	function fps(ps,pp,A,u)
 		real, intent (in) :: ps,pp,A,u
-		real :: fperp
+		real :: fps
 		pu = u/sqrt(1-u**2)
 		gammau = sqrt(1+pu**2)
 		gammap = sqrt(1+pp**2)
@@ -102,7 +104,7 @@ contains
 		gamma_p = sqrt(1+p_p**2)
 		gamma_s = sqrt(1+p_s**2)
 		gamma_u = 1/sqrt(1-u**2)
-		p_u = u*gammau
+		p_u = u*gamma_u
 		
 		N = 2*(gamma_u*gamma_p*gamma_s+p_p*p_u+1)*A*gamma_p**2*gamma_u**2*p_s-A*((p_p-p_u)**2 &
 		+gamma_p**2*gamma_u**2*p_s**2)*gamma_u*gamma_p*p_s/gamma_s
@@ -183,12 +185,11 @@ contains
 		return
 	end function bisect
 
-	function generate_variate(func,pm,pplus,pminus,lambdap,lambdam,qp,qm,qmi,s)
-		real, intent(in) :: pm,pplus,pminus,lambdap,lambdam,qp,qm,qmi
-		integer, intent(in) :: s
+	function generate_variate(func,pm,pplus,pminus,lambdap,lambdam,qp,qm,qmi,pp)
+		real, intent(in) :: pm,pplus,pminus,lambdap,lambdam,qp,qm,qmi,pp
 		real :: generate_variate
 		procedure(template), pointer :: func
-		integer :: flag, seed
+		integer :: flag
 		flag = 0
 		do while(flag == 0)
 			call random_number(U)
@@ -227,14 +228,14 @@ program test_bisect
 	procedure (templatem), pointer :: funcm,funcmp
 	real :: pplus,pminus,lambdap,lambdam
 	real :: psplus,psminus,lambdaps,lambdams,pp
-	real, dimension(:), allocatable :: p_parallel, p_s
+	real, dimension(:), allocatable :: p_parallel, p_s, p_s_sin
 	integer :: i
 
 
 	Npoints = 10000
 	allocate(p_parallel(Npoints))
 	allocate(p_s(Npoints))
-
+	allocate(p_s_sin(Npoints))
 	func => fdparallel
 	funcp => fdps
 	func1 => fparallel
@@ -271,10 +272,9 @@ program test_bisect
 			write(*,*) "Iteration",i
 		end if
 	
-		p_parallel(i+1) = generate_variate(func1,pm,pplus,pminus,lambdap,lambdam,qp,qm,qmi,i)
-		pp = p_parallel(i+1)	
+		p_parallel(i+1) = generate_variate(func1,pm,pplus,pminus,lambdap,lambdam,qp,qm,qmi,0.0)
+		pp = p_parallel(i+1)
 	
-
 		psm = fpsm(A,u,pp)
 
 		faperp = fpsm(A,u,pp)
@@ -293,16 +293,32 @@ program test_bisect
 !		write(*,*) "Value of zeros are ",psplus,psminus
 !		write(*,*) "Values of lambdas are ",lambdaps,lambdams
 !		write(*,*) "Values of qs are ",qps,qmis,qms
-		p_s(i+1) = generate_variate(func1p,psm,psplus,psminus,lambdaps,lambdams,qps,qms,qmis,i)
+		p_s(i+1) = generate_variate(func1p,psm,psplus,psminus,lambdaps,lambdams,qps,qms,qmis,pp)
 		i = i+1
 	end do
+	p_s = p_s*sqrt(1+p_parallel**2)
+	
+	! Distribute p_s uniformly over 2\pi
+	i = 0
+	do while(i<Npoints)
+		call random_number(U)
+		p_s_sin(i+1) = p_s(i+1)*sin(U*2*pi)
+		p_s(i+1) = p_s(i+1)*cos(U*2*pi)
+		i = i+1
+	end do
+
 
 	open(unit=1,file="variates_parallel.txt")
 	write(1,*) p_parallel
 	close(1)
-	open(unit=2,file="variates_perp.txt")
+	open(unit=2,file="variates_perp_1.txt")
 	write(2,*) p_s
 	close(2)
+	open(unit=3,file="variates_perp_2.txt")
+	write(3,*) p_s_sin
+	close(3)
+	
 	deallocate(p_parallel)
 	deallocate(p_s)
+	deallocate(p_s_sin)
 end program test_bisect
